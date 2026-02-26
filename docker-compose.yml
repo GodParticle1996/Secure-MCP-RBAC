@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: secure_rbac
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/secure_rbac
+      JWT_SECRET: super-secret-change-me
+      FRONTEND_ORIGIN: http://localhost:3000
+      PORT: 3001
+    ports:
+      - '3001:3001'
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+
+  mcp_server:
+    build: ./mcp_server
+    environment:
+      BACKEND_URL: http://backend:3001
+      AI_USER_EMAIL: ai@example.com
+      AI_USER_PASSWORD: ai123
+    ports:
+      - '8000:8000'
+    depends_on:
+      - backend
